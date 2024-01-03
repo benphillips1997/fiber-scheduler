@@ -7,7 +7,8 @@ obj_file := $(file).o
 else
 obj_file :=
 endif
-comp_files := $(obj_file) fiber.o scheduler.o context/context.s
+inc_files := fiber.o scheduler.o context/context.s
+comp_files := $(obj_file) $(inc_files)
 
 all: main
 
@@ -18,7 +19,7 @@ else
 	@echo "Error: input file not defined"
 endif
 
-test: unit_tests.o $(comp_files) simpletest/simpletest.cpp
+test: unit_tests.o $(inc_files) simpletest/simpletest.cpp
 	$(CXX) -o $@ $^
 
 %.o: %.cpp
