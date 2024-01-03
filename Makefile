@@ -18,8 +18,11 @@ else
 	@echo "Error: input file not defined"
 endif
 
+test: unit_tests.o $(comp_files) simpletest/simpletest.cpp
+	$(CXX) -o $@ $^
+
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $^
 
 clean:
-	rm *.o main
+	rm *.o main test

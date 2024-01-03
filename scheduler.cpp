@@ -1,8 +1,7 @@
 #include "scheduler.hpp"
 
-void scheduler::spawn(fiber *f, void *d)
+void scheduler::spawn(fiber *f)
 {
-    data_ = d;
     fibers_.push_back(f);
 }
 
@@ -12,51 +11,48 @@ void scheduler::do_it()
     get_context(&context_);
 
     if (!fibers_.empty()) {
-        // std::cout << "fiber running" << std::endl;
         fiber *f = fibers_.front();
-        // fibers.pop_front();
-
-        // set data to data from current fiber
-        data_ = f->get_data();
+        fibers_.pop_front();
+        cur_fiber_ = f;
 
         // jump to task
         Context c = f->get_context();
         set_context(&c);
     }
-
-    // if (!rescheduled.empty()) {
-    //     std::cout << "Running rescheduled" << std::endl;
-    //     Context c = *(rescheduled.front());
-    //     rescheduled.pop_front();
-
-    //     set_context(&c);
-    // }
 }
 
 void scheduler::yield()
 {
-    std::cout << "Yield called" << std::endl;
-    // reschedule the fiber
-    std::cout << "1" << std::endl;
-    Context c = fibers_.front()->get_context();
-    set_context(&c);
-    fiber f = *(fibers_.front());
+    bool yielded = false;
+    // create new context to return to later and another one to store the fibers current context to give back
+    Context return_context, original_context;
+    get_context(&return_context);
 
-    std::cout << "2" << std::endl;
-    fibers_.pop_front();
-    std::cout << "3" << std::endl;
-    fibers_.push_back(&f);
-    std::cout << "4" << std::endl;
+    // check yield status we don't create an infinite loop
+    if (!yielded) {
+        yielded = true;
 
-    set_context(&context_);
+        // keep current context to give back later
+        original_context = cur_fiber_->get_context();
+        // replace the context of the fiber with the new context so we can return later
+        cur_fiber_->change_context(return_context);
+
+        // push this fiber to the back of the queue
+        fibers_.push_back(cur_fiber_);
+        cur_fiber_ = nullptr;
+
+        // jump back to scheduler
+        set_context(&context_);
+    }
+
+    yielded = false;
+    // change context back to original
+    cur_fiber_->change_context(original_context);
 }
 
 void scheduler::fiber_exit() 
 {
-    data_ = nullptr;
-    // curFiber = nullptr;
-
-    fibers_.pop_front();
+    cur_fiber_ = nullptr;
 
     // jump back to scheduler
     set_context(&context_);
@@ -64,5 +60,5 @@ void scheduler::fiber_exit()
 
 void* scheduler::get_data()
 {
-    return data_;
+    return cur_fiber_->get_data();
 }

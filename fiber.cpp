@@ -13,16 +13,19 @@ fiber::fiber(void *func, void *d)
     // account for red zone
     sp -= 128;
 
-    // set context pointers
+    // set context stack pointer and instruction pointer
     context_.rsp = sp;
     context_.rip = func;
 }
 
-fiber::~fiber() {}
-
 Context fiber::get_context()
 {
     return context_;
+}
+
+void fiber::change_context(Context c)
+{
+    context_ = c;
 }
 
 void* fiber::get_data()

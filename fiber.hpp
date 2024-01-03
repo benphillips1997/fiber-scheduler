@@ -12,8 +12,10 @@ private:
     void *data_;
 public:
     fiber(void *func, void *d = nullptr);
-    ~fiber();
+    ~fiber() {}
 
     Context get_context();
+    void change_context(Context c);
+
     void* get_data();
 };
