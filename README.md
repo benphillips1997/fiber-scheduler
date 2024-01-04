@@ -17,7 +17,7 @@ If you don't specify a file then there will be an error message and an executabl
 
 ![output of makefile error](images/makefile_example_error.png)
 
-I have a seperate rule in the Makefile for my unit tests. To create an executable for these you can use 'make test' and it will create a 'test' executable.
+I have a seperate rule in the Makefile for my unit tests. To create an executable for these you can use 'make test' and it will create an executable called 'test'.
 
 ![output of makefile test](images/makefile_example_unit_test.png)
 
@@ -26,7 +26,7 @@ I have a seperate rule in the Makefile for my unit tests. To create an executabl
 
 For this task I first implemented an example that shows how context works. You can find this example in the 'context_test.cpp' file. This program will initialise x to 0, then use the get_context function to save the state to return to later, then x will be checked to see if it is 0. If it is then it will be incremeted and the set_context function will be called and the state saved with get_context earlier will be returned to. Below you can see the output of the program.
 
-![context_test output](images/context_test_output.png)
+![context test output](images/context_test_output.png)
 
 <br/>
 
@@ -90,7 +90,22 @@ Here is the ouput of the program.
 
 # Task 2
 
-For this example I created a fiber class. You can find this in 'fiber.hpp' and 'fiber.cpp'. This class takes has 3 variables, context, stack_top and stack_bottom. On creation the class must take a void* function as a parameter. A stack and context will be created and the contexts stack pointer and instruction pointer will be set to the stack and the void* function respectively. The class also has a public method to return the context.
+For this example I created a fiber class. You can find this in 'fiber.hpp' and 'fiber.cpp'. This class takes has 3 variables, context, stack_top and stack_bottom.
+
+```c++
+Context context_;
+char *stack_bottom_;
+char *stack_top_;
+```
+
+On creation the class must take a void* function as a parameter. A stack and context will be created and the contexts stack pointer and instruction pointer will be set to the stack and the void* function respectively. The class also has a public method to return the context.
+
+```c++
+fiber(void *func);
+~fiber() {}
+
+Context get_context();
+```
 
 I then reworked the original example from task 1 to use this class. You can find the reworked version in the file 'control_rework.cpp'.
 
@@ -102,7 +117,20 @@ set_context(&c);
 
 <br/>
 
-I then created a scheduler class to manage running multiple fibers. You can find this implementation in the 'scheduler.hpp' and 'scheduler.cpp' files. This class has 2 variables, 'fibers' which is a queue of fibers to run, and 'context' which is used to move around the control in the shceduler. It also has 3 methods; 'spawn' which takes a pointer to a fiber as a parameter and pushes the fiber to the back of the queue, 'do_it' which will begin running the fibers in the queue until it is empty, and 'fiber_exit' which must be used at the end of a fiber to exit it and pass control back to the scheduler.
+I then created a scheduler class to manage running multiple fibers. You can find this implementation in the 'scheduler.hpp' and 'scheduler.cpp' files. This class has 2 variables, 'fibers' which is a queue of fibers to run, and 'context' which is used to move around the control in the shceduler.
+
+```c++
+std::deque<fiber*> fibers_;
+Context context_;
+```
+
+It also has 3 methods; 'spawn' which takes a pointer to a fiber as a parameter and pushes the fiber to the back of the queue, 'do_it' which will begin running the fibers in the queue until it is empty, and 'fiber_exit' which must be used at the end of a fiber to exit it and pass control back to the scheduler.
+
+```c++
+void spawn(fiber *f);
+void do_it();
+void fiber_exit();
+```
 
 After creating the class I made a program to test the scheduler. This can be found in the file 'scheduler_test1.cpp'. This example creates 2 fibers, calls spawn using the scheduler to put them in the queue and then calls do_it to run them. Both these fibers just print and call fiber_exit.
 
@@ -121,7 +149,7 @@ s.spawn(&f);
 s.fiber_exit();
 ```
 
-This should put the new fiber at the end of the queue.
+This should put the new fiber at the end of the queue and should run without needing to call do_it again.
 
 ![output of second schedule example](images/schedule_test2.png)
 
@@ -129,7 +157,13 @@ This should put the new fiber at the end of the queue.
 
 Then I added an optional pointer to my fiber class for data that may want to be passed in and a 'get_data' method for accessing it. I also added a 'cur_fiber' variable to my scheduler class which is the current fiber that is running and a 'get_data' method that will return the data from the current fiber thats running.
 
-After that I created an example in the file 'scheduler_data_test1.cpp' that runs two fibers that share a pointer to the same data. So changing the data in one of the fibers changes it for any other fibers using it too.
+After that I created an example in the file 'scheduler_data_test1.cpp' that runs two fibers that share a pointer to the same data. So changing the data in one of the fibers changes it for any other fibers using it too. In this example the first fiber will print the value of the data and increment it, then the second fiber will run and it should print the incremented value.
+
+```c++
+int *dp = (int*)s.get_data();
+cout << "fiber 1: " << *dp << endl;
+*dp = *dp += 1;
+```
 
 ![output from schedule data example one](images/schedule_data_test1.png)
 
