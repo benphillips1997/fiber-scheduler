@@ -169,7 +169,7 @@ cout << "fiber 1: " << *dp << endl;
 
 <br/>
 
-I created a second example to demonstate the data sharing between fibers. This is in the file 'scheduler_data_test2.cpp'. This example uses 3 fibers. Only the first fiber will be spawned and then do_it will be called. Fibers 1 and 3 will get and increment the data and all fibers will spawn the next fiber, so they are called in a loop.
+I created a second example to demonstate the data sharing between fibers. This is in the file 'scheduler_data_test2.cpp'. This example uses 3 fibers. Only the first fiber will be spawned initially and then do_it will be called. Fibers 1 and 3 will get and increment the data and all fibers will spawn the next fiber, so they are called in a loop.
 
 ```c++
 int *dp = (int*)s.get_data();
@@ -191,10 +191,16 @@ if (*dp < 15) {
 
 ![output from schedule data example two](images/schedule_data_test2.png)
 
+<br/>
+
+I also created some unit tests. These can be found in 'unit_tests.cpp'. To write these I used the simpletest submodule. I made three test groups to check the scheduler works properly and data sharing works correctly. You can see the output of these below.
+
+![output of unit tests](images/unit_tests1.png)
+
 
 ## Task 3
 
-For this task I implemented yield for the scheduler class. This implemetation is similar to the context_test program from task 1. I added a new method called 'change_context' to my fiber class to make this work. This takes a context as a paramter and replaces the current context with it. 
+For this task I implemented yield for the scheduler class. This implemetation is similar to the context_test program from task 1. I added a new method called 'change_context' to my fiber class to make this work. This takes a context as a paramter and replaces the current context of the fiber with it. 
 
 ```c++
 void fiber::change_context(Context c)
@@ -203,7 +209,7 @@ void fiber::change_context(Context c)
 }
 ```
 
-In the yield function in the scheduler class we have two contexts, one to call get_context with so we can return here later, and another to save the original context that the fiber was created with so we can change it back when it returns here. There is also a yielded variable that is used to check wether in not it has already been yielded before. This is important as otherwise we will end up with the fiber infinitely looping. When yielded the fiber will be pushed to the back of the queue to allow other fibers to run, then will return here and complete when it reaches the front of the queue.
+In the yield function in the scheduler class we have two contexts, one to call get_context with so we can return here later, and another to save the original context that the fiber was created with so we can change it back when it returns here. There is also a yielded variable that is used to check wether in not it has already been yielded before. This is important as otherwise we will end up with the fiber infinitely looping. When this runs the fiber will be pushed to the back of the queue to allow other fibers to run, then will return here and complete when it reaches the front of the queue.
 
 ```c++
 bool yielded = false;
@@ -235,7 +241,7 @@ cur_fiber_->change_context(original_context);
 
 <br/>
 
-Then I developed a simple example using the yield function to test it. You can find this example in 'yield_test1.cpp'. This example just uses two fibers and the first one yields to allow the second to run and then the first one is returned to. The output of the program is below.
+Then I developed an example using the yield function to test it. You can find this example in 'yield_test1.cpp'. This example just uses two fibers and the first one yields to allow the second to run and then the first one is returned to. The output of the program is below.
 
 ![output of first yield example](images/yield_test1.png)
 
@@ -271,22 +277,44 @@ I then implemented an example of using yield and sharing data between fibers. Yo
 
 ```c++
 cout << "fiber 1 before yield" << endl;
+
+// get and print data
 int *dp = (int*)s.get_data();
 cout << "data is " << *dp << endl;
+
 s.yield();
+
 cout << "fiber 1 after yield" << endl;
+
+// get and print data
 dp = (int*)s.get_data();
 cout << "data is " << *dp << endl;
-s.fiber_exit();
 ```
 
-The second fiber will change the data after the first fiber has called yield so the first fiber should print different values.
+The second fiber will change the data.
+
+```c++
+// change data
+int *dp = (int*)s.get_data();
+*dp = 3;
+``` 
+
+So after the first fiber has called yield the second fiber will change the data, and the first fiber should print different values before and after yield.
 
 ![output of yield and data sharing test](images/yield_data_test1.png)
 
 <br/>
 
-I made another example of using yield and data sharing called 'yield_data_test2.cpp'. This has 4 fibers that perform different tasks and will all share the same data. The fiber 'loop' will initally be spawned. In this fiber it will check if the value of the data is less than 5 and if it is then it will spawn another fiber 'fib' to be added to the end of the queue and yield. When it returns, it will spawn the fiber 'print' which prints the value of the data.
+I made another example of using yield and data sharing called 'yield_data_test2.cpp'. This has 4 fibers that perform different tasks and will all share the same data.
+
+```c++
+void fib();
+void print();
+void loop();
+void inc();
+```
+
+The data will initially be set to 0 and the fiber 'loop' will be spawned. In this fiber it will check if the value of the data is less than 5 and if it is then it will spawn another fiber 'fib' and yield. When it returns, it will spawn the fiber 'print' which prints the value of the data.
 
 ```c++
 if (*dp < 5) {
@@ -312,6 +340,12 @@ fiber lp((void*)loop, dp);
 s.spawn(&lp);
 ```
 
-This will generate a loop so if the initial data value is set to 0 it should print out 1 to 5. Below you can see the output.
+This will generate a loop so with the initial data value set to 0 it should print out 1 to 5. Below you can see the output.
 
 ![output of yield and data sharing second test](images/yield_data_test2.png)
+
+<br/>
+
+I also added some unit tests in 'unit_tests.cpp' to check yielding and sharing data works properly. I added 4 test groups, and you can see the output from all the tests below.
+
+![output of unit tests](images/unit_tests2.png)

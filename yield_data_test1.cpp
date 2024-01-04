@@ -12,20 +12,30 @@ void func2();
 void func1()
 {
     cout << "fiber 1 before yield" << endl;
+
+    // get and print data
     int *dp = (int*)s.get_data();
     cout << "data is " << *dp << endl;
+
     s.yield();
+
     cout << "fiber 1 after yield" << endl;
+
+    // get and print data
     dp = (int*)s.get_data();
     cout << "data is " << *dp << endl;
+
     s.fiber_exit();
 }
 
 void func2()
 {
     cout << "fiber 2 entered" << endl;
+
+    // change data
     int *dp = (int*)s.get_data();
     *dp = 3;
+    
     s.fiber_exit();
 }
 

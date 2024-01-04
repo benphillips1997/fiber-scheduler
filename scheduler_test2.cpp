@@ -38,8 +38,5 @@ int main()
 
     s.do_it();
 
-    fiber f3((void*)func3);
-    s.spawn(&f3);
-
     return 0;
 }
