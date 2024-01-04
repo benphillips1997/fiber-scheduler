@@ -200,7 +200,7 @@ I also created some unit tests. These can be found in 'unit_tests.cpp'. To write
 
 ## Task 3
 
-For this task I implemented yield for the scheduler class. This implemetation is similar to the context_test program from task 1. I added a new method called 'change_context' to my fiber class to make this work. This takes a context as a paramter and replaces the current context of the fiber with it. 
+For this task I implemented yield for the scheduler class. This implemetation is similar to the context_test program from task 1. I added a new method called 'change_context' to my fiber class to make this work. This takes a context as a parameter and replaces the current context of the fiber with it. 
 
 ```c++
 void fiber::change_context(Context c)
@@ -209,7 +209,7 @@ void fiber::change_context(Context c)
 }
 ```
 
-In the yield function in the scheduler class we have two contexts, one to call get_context with so we can return here later, and another to save the original context that the fiber was created with so we can change it back when it returns here. There is also a yielded variable that is used to check wether in not it has already been yielded before. This is important as otherwise we will end up with the fiber infinitely looping. When this runs the fiber will be pushed to the back of the queue to allow other fibers to run, then will return here and complete when it reaches the front of the queue.
+In the yield function in the scheduler class we have two contexts, one to call get_context with so we can return here later, and another to save the original context that the fiber was created with so we can change it back when it returns here. There is also a variable called 'yielded' that is used to check wether in not it has already been yielded before. This is important as otherwise we will end up with the fiber infinitely looping. When this runs, the fiber will be pushed to the back of the queue to allow other fibers to run, then will return here and complete when it reaches the front of the queue.
 
 ```c++
 bool yielded = false;
@@ -314,7 +314,7 @@ void loop();
 void inc();
 ```
 
-The data will initially be set to 0 and the fiber 'loop' will be spawned. In this fiber it will check if the value of the data is less than 5 and if it is then it will spawn another fiber 'fib' and yield. When it returns, it will spawn the fiber 'print' which prints the value of the data.
+The data will initially be set to 0 and the fiber 'loop' will be spawned. In this fiber it will check if the value of the data is less than 5 and if it is then it will spawn another fiber 'fib' and will yield. When it returns, it will spawn the fiber 'print' which prints the value of the data.
 
 ```c++
 if (*dp < 5) {
