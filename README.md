@@ -26,7 +26,7 @@ I have a seperate rule in the Makefile for my unit tests. To create an executabl
 
 For this task I first implemented an example that shows how context works. You can find this example in the 'context_test.cpp' file. This program will initialise x to 0, then use the get_context function to save the state to return to later, then x will be checked to see if it is 0. If it is then it will be incremeted and the set_context function will be called and the state saved with get_context earlier will be returned to. Below you can see the output of the program.
 
-![context_test output](images/context_test.png)
+![context_test output](images/context_test_output.png)
 
 <br/>
 
@@ -94,6 +94,12 @@ For this example I created a fiber class. You can find this in 'fiber.hpp' and '
 
 I then reworked the original example from task 1 to use this class. You can find the reworked version in the file 'control_rework.cpp'.
 
+```c++
+fiber f((void*)foo);
+Context c = f.get_context();
+set_context(&c);
+```
+
 <br/>
 
 I then created a scheduler class to manage running multiple fibers. You can find this implementation in the 'scheduler.hpp' and 'scheduler.cpp' files. This class has 2 variables, 'fibers' which is a queue of fibers to run, and 'context' which is used to move around the control in the shceduler. It also has 3 methods; 'spawn' which takes a pointer to a fiber as a parameter and pushes the fiber to the back of the queue, 'do_it' which will begin running the fibers in the queue until it is empty, and 'fiber_exit' which must be used at the end of a fiber to exit it and pass control back to the scheduler.
@@ -121,11 +127,35 @@ This should put the new fiber at the end of the queue.
 
 <br/>
 
-Then I added an optional pointer to my fiber class for data that may want to be passed in and a 'get_data' method for accessing it. I also added a 'curFiber' variable to my scheduler class which is the current fiber that is running and a 'get_data' method that will return the data from the current fiber thats running.
+Then I added an optional pointer to my fiber class for data that may want to be passed in and a 'get_data' method for accessing it. I also added a 'cur_fiber' variable to my scheduler class which is the current fiber that is running and a 'get_data' method that will return the data from the current fiber thats running.
 
 After that I created an example in the file 'scheduler_data_test1.cpp' that runs two fibers that share a pointer to the same data. So changing the data in one of the fibers changes it for any other fibers using it too.
 
 ![output from schedule data example one](images/schedule_data_test1.png)
+
+<br/>
+
+I created a second example to demonstate the data sharing between fibers. This is in the file 'scheduler_data_test2.cpp'. This example uses 3 fibers. Only the first fiber will be spawned and then do_it will be called. Fibers 1 and 3 will get and increment the data and all fibers will spawn the next fiber, so they are called in a loop.
+
+```c++
+int *dp = (int*)s.get_data();
+cout << "fiber 1: " << *dp << endl;
+*dp = *dp += 1;
+fiber f((void*)func2, dp);
+s.spawn(&f);
+s.fiber_exit();
+```
+
+In the second fiber there is a conditional that another fiber will only be spawned if the value in the data if less than 15. So these fibers will spawn each other in a loop until the value reaches 15.
+
+```c++
+if (*dp < 15) {
+    fiber f((void*)func3, dp);
+    s.spawn(&f);
+}
+```
+
+![output from schedule data example two](images/schedule_data_test2.png)
 
 
 ## Task 3
@@ -177,6 +207,32 @@ Then I developed a simple example using the yield function to test it. You can f
 
 <br/>
 
+Then I created another example using yield in 'yield_test2.cpp'. Yielding a fiber should push it to back of the queue. I created and spawned a fiber inside the first fiber before yield is called to test this. So the created fiber should run before this fiber is returned to.
+
+```c++
+void func1()
+{
+    cout << "fiber 1 before yield" << endl;
+    fiber f((void*)func3);
+    s.spawn(&f);
+    s.yield();
+    cout << "fiber 1 after yield" << endl;
+    s.fiber_exit();
+}
+```
+
+This gave the expected result.
+
+![output of first iteration of yield example 2](images/yield_test2.png)
+
+
+I then extended this to spawn another fiber after yield was called. So now the order should be f1 before yield -> f2 -> f3 -> f1 after yield -> f3.
+
+![output of second iteration of yield example 2](images/yield_test2_2.png)
+
+
+<br/>
+
 I then implemented an example of using yield and sharing data between fibers. You can find this example in 'yield_data_test1.cpp'. In this example there is two fibers that share data. The first fiber will print the data before and after yield.
 
 ```c++
@@ -190,12 +246,38 @@ cout << "data is " << *dp << endl;
 s.fiber_exit();
 ```
 
-The second fiber will change the data after the first fiber has called yield so they should be different values.
+The second fiber will change the data after the first fiber has called yield so the first fiber should print different values.
 
 ![output of yield and data sharing test](images/yield_data_test1.png)
 
+<br/>
 
+I made another example of using yield and data sharing called 'yield_data_test2.cpp'. This has 4 fibers that perform different tasks and will all share the same data. The fiber 'loop' will initally be spawned. In this fiber it will check if the value of the data is less than 5 and if it is then it will spawn another fiber 'fib' to be added to the end of the queue and yield. When it returns, it will spawn the fiber 'print' which prints the value of the data.
 
-Remember to use swap_context in tests
+```c++
+if (*dp < 5) {
+    fiber f((void*)fib, dp);
+    s.spawn(&f);
 
-Make unit tests for every task for everything you can test
+    s.yield();
+
+    fiber pr((void*)print, dp);
+    s.spawn(&pr);
+}
+```
+
+In the 'fib' fiber it will spawn the 'inc' fiber, which increments the data by one, and yields. When it returns the 'loop' fiber will be spawned.
+
+```c++
+fiber incr((void*)inc, dp);
+s.spawn(&incr);
+
+s.yield();
+
+fiber lp((void*)loop, dp);
+s.spawn(&lp);
+```
+
+This will generate a loop so if the initial data value is set to 0 it should print out 1 to 5. Below you can see the output.
+
+![output of yield and data sharing second test](images/yield_data_test2.png)
